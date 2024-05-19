@@ -1,0 +1,51 @@
+NAME
+       paping - Cross-platform TCP port testing, emulating the functionality of ping (port ping)
+
+SYNOPSIS
+       paping [options] destination
+
+DESCRIPTION
+       The papping command is used to communicate with another host using the TCP protocol (SYN,ACK and FYN).
+       Paping uses a 3-way handshake and finished connection to test communicate with another host,
+       similiar "Ping", but using only TCP connection.
+
+       1) Caller sends SYN
+       2) Recipient responds with SYN, ACK
+       3) Caller sends ACK
+       4) Caller sends ACK, FYN
+       5) Recipient responds FYN, ACK
+
+       Paping works only IPv4 and TCP.
+      
+OPTIONS
+
+       -?, --help	
+               The option displays usage
+ 
+       -c, --count N	
+               set number of checks to N
+
+       -p, --port N	
+               set TCP port N (required)
+     
+       -t, --timeout	
+               timeout in milliseconds (default 1000)
+
+      --nocolor	
+          Disable color output
+
+BUGS
+           • Limitation to use only IPv4 and TCP.
+
+           • Please send bug reports, questions, requests, fixes and pull requests to
+             https://github.com/ronyjdesousa/paping/issues
+
+SEE ALSO
+       ip(8), ss(8), ping(8).
+
+AUTHOR
+       The original author of paping is Mike Lovell. Currently, this project is maintained
+       by volunteers.
+
+       The last version of paping can be found at https://github.com/ronyjdesousa/paping/pulls
+
