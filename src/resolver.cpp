@@ -3,32 +3,40 @@
 
 int resolver_c::Resolve(pcc_t hostname, host_c &host)
 {
-    hostent* remoteHost = NULL;
+    addrinfo hints;
+    addrinfo *result = NULL;
 
     if (net_compat_c::Init() != SUCCESS)
         return ERROR_SOCKET_GENERALFAILURE;
 
-    remoteHost = gethostbyname(hostname);
+    memset(&hints, 0, sizeof(hints));
+
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    int error = getaddrinfo(hostname, NULL, &hints, &result);
 
     net_compat_c::Cleanup();
 
-    if (remoteHost == NULL)
+    if (error != 0 || result == NULL)
         return ERROR_SOCKET_CANNOTRESOLVE;
 
-    sockaddr_in address;
-
-    memset(&address, 0, sizeof(address));
-
-    address.sin_family = AF_INET;
-    address.sin_addr = *(in_addr*)remoteHost->h_addr_list[0];
-
     memset(&host.Address, 0, sizeof(host.Address));
-    memcpy(&host.Address, &address, sizeof(address));
+    memcpy(&host.Address, result->ai_addr, result->ai_addrlen);
 
-    host.AddressLength = sizeof(address);
-    host.AddressFamily = AF_INET;
-    host.Hostname = remoteHost->h_name;
-    host.HostIsIP = !strcmp(hostname, host.Hostname);
+    host.AddressLength = result->ai_addrlen;
+    host.AddressFamily = result->ai_family;
+    host.Hostname = hostname;
+
+    in_addr ipv4Address;
+    in6_addr ipv6Address;
+
+    host.HostIsIP =
+        inet_pton(AF_INET, hostname, &ipv4Address) == 1 ||
+        inet_pton(AF_INET6, hostname, &ipv6Address) == 1;
+
+    freeaddrinfo(result);
 
     return SUCCESS;
 }
