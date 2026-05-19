@@ -50,10 +50,10 @@ int socket_c::Connect(host_c host, int timeout, double &time)
     if (net_compat_c::Init() != SUCCESS)
         return ERROR_SOCKET_GENERALFAILURE;
 
-    clientSocket = socket(host.AddressFamily, 
-                          socket_c::GetSocketType(host.Type), 
+    clientSocket = socket(host.AddressFamily,
+                          socket_c::GetSocketType(host.Type),
                           host.Type);
-    
+
     if (clientSocket == -1) {
         net_compat_c::Cleanup();
         return ERROR_SOCKET_GENERALFAILURE;
@@ -61,11 +61,20 @@ int socket_c::Connect(host_c host, int timeout, double &time)
 
     if (host.AddressFamily == AF_INET) {
         sockaddr_in *address =
-        reinterpret_cast<sockaddr_in *>(&host.Address);
+            reinterpret_cast<sockaddr_in *>(&host.Address);
 
-       address->sin_port = htons(host.Port);
+        address->sin_port = htons(host.Port);
+    } else if (host.AddressFamily == AF_INET6) {
+        sockaddr_in6 *address =
+            reinterpret_cast<sockaddr_in6 *>(&host.Address);
+
+        address->sin6_port = htons(host.Port);
+    } else {
+        net_compat_c::Close(clientSocket);
+        net_compat_c::Cleanup();
+        return ERROR_SOCKET_GENERALFAILURE;
     }
-    
+
     timeval tv;
 
     if (net_compat_c::SetNonBlocking(clientSocket) != SUCCESS) {
@@ -82,8 +91,8 @@ int socket_c::Connect(host_c host, int timeout, double &time)
     timer.Start();
 
     connect(clientSocket,
-        reinterpret_cast<sockaddr *>(&host.Address),
-        host.AddressLength);
+            reinterpret_cast<sockaddr *>(&host.Address),
+            host.AddressLength);
 
     fd_set read, write;
 
