@@ -1,5 +1,8 @@
 bin_PROGRAMS = paping
-paping_SOURCES = arguments.cpp \
+paping_SOURCES = \
+				 arguments.cpp \
+				 net_compat.h \
+				 net_compat.cpp \
 				 host.cpp \
 				 i18n.cpp \
 				 main.cpp \
