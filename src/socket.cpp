@@ -1,27 +1,12 @@
 #include "standard.h"
 #include "net_compat.h"
+#include "resolver.h"
 
 using namespace std;
 
 int socket_c::Resolve(pcc_t hostname, host_c &host)
 {
-    hostent* remoteHost = NULL;
-
-    if (net_compat_c::Init() != SUCCESS)
-        return ERROR_SOCKET_GENERALFAILURE;
-
-    remoteHost = gethostbyname(hostname);
-
-    net_compat_c::Cleanup();
-
-    if (remoteHost == NULL)
-        return ERROR_SOCKET_CANNOTRESOLVE;
-
-    host.IPAddress = *(in_addr*)remoteHost->h_addr_list[0];
-    host.Hostname = remoteHost->h_name;
-    host.HostIsIP = !strcmp(hostname, host.Hostname);
-
-    return SUCCESS;
+    return resolver_c::Resolve(hostname, host);
 }
 
 int socket_c::SetPortAndType(int port, int type, host_c &host)

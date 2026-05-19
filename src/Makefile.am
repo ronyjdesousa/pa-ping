@@ -3,6 +3,8 @@ paping_SOURCES = \
 				 arguments.cpp \
 				 net_compat.h \
 				 net_compat.cpp \
+				 resolver.h \
+				 resolver.cpp \
 				 host.cpp \
 				 i18n.cpp \
 				 main.cpp \
