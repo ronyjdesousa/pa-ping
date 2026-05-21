@@ -2,9 +2,32 @@ Version 1.6.0
 
   [ Rony Joao de Sousa ]
 
-  * Added Changelog.
-  * Removed paping_vs2010 folder.
+  * Build System:
+      - Added manual page installation support through Autotools.
+      - Introduced an Autotools-based build system.
+      - Separated platform-specific socket compatibility helpers to improve portability.
 
+  * Codebase:
+      - Refactored hostname resolution into a dedicated resolver component.
+      - Removed the obsolete paping_vs2010 directory.
+      - Simplified project metadata handling and modernized banner output.
+      - Standardized disabled color handling using integer zero values.
 
-Sun May 19 12:00:20 -03:00 2024  Rony Joao de Sousa  <ronyjdesousa@gmail.com>
+  * Documentation
+      - Added a project CHANGELOG.
+      - Added an AUTHORS file documenting project contributors.
+      - Modernized and expanded the paping manual pages.
+      - Updated the README.md with refreshed project description and build instructions.
+
+  * Fixes
+      - Corrected timeout reporting for refused TCP connections.
+
+  * Networking
+      - Added address family awareness during socket creation.
+      - Added IPv4 and IPv6 address family selection support.
+      - Implemented fallback connection attempts across multiple resolved addresses.
+      - Introduced an address-neutral host abstraction layer.
+      - Migrated hostname resolution to getaddrinfo(3) with IPv6 support.
+
+Fri May 22 16:25:20 -03:00 2026  Rony Joao de Sousa  <ronyjdesousa@gmail.com>
 
