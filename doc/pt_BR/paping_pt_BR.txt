@@ -1,0 +1,54 @@
+NOME
+paping - utilitário para teste de conectividade TCP e disponibilidade de portas
+
+SINOPSE
+paping [opções] destino
+
+DESCRIÇÃO
+paping é um utilitário open source utilizado para testar conectividade TCP/IP entre hosts.
+
+Seu funcionamento é semelhante ao ping(8), porém utilizando conexões TCP em vez de requisições ICMP echo. 
+Isso permite verificar se um host remoto está acessível e se uma porta TCP específica está aceitando conexões.
+
+O paping pode ser utilizado para:
+
+ • testar disponibilidade de serviços
+ • diagnosticar problemas de firewall
+ • medir tempo de resposta de conexões TCP
+ • verificar acessibilidade de portas remotas
+
+Uma conexão TCP bem-sucedida normalmente segue o processo de three-way handshake:
+
+ 1) Cliente envia SYN
+ 2) Servidor responde SYN, ACK
+ 3) Cliente envia ACK
+
+O paping mede o tempo necessário para estabelecer a conexão TCP e apresenta o resultado ao usuário.
+
+OPÇÕES
+   -?, --help    Exibe ajuda e informações de uso.
+   -4, --4    Usar somente IPv4
+   -6, --6    Usar somente IPv6
+   -c, --count N    Encerra após N tentativas de conexão.
+   -p, --port N    Define a porta TCP de destino.
+   -t, --timeout N    Define o tempo limite da conexão em milissegundos.
+          O padrão é 1000.
+   --nocolor    Desabilita saída colorida.
+
+BUGS
+
+Relatórios de bugs, patches e solicitações de funcionalidades podem ser enviados para:
+
+https://github.com/ronyjdesousa/paping/issues
+
+VEJA TAMBÉM
+ping(8), ip(8), ss(8)
+
+AUTOR
+O paping foi originalmente desenvolvido por Mike Lovell.
+
+Atualmente o projeto é mantido por voluntários.
+
+Página do projeto:
+
+https://github.com/ronyjdesousa/paping

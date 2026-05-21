@@ -1,51 +1,54 @@
 NAME
-       paping - Cross-platform TCP port testing, emulating the functionality of ping (port ping)
+paping - TCP connectivity and port availability testing utility
 
 SYNOPSIS
-       paping [options] destination
+paping [options] destination
 
 DESCRIPTION
-       The papping command is used to communicate with another host using the TCP protocol (SYN,ACK and FYN).
-       Paping uses a 3-way handshake and finished connection to test communicate with another host,
-       similiar "Ping", but using only TCP connection.
+paping is an open-source utility for testing TCP/IP network connectivity between hosts.
 
-       1) Caller sends SYN
-       2) Recipient responds with SYN, ACK
-       3) Caller sends ACK
-       4) Caller sends ACK, FYN
-       5) Recipient responds FYN, ACK
+It works similarly to ping(8), but uses TCP connections instead of ICMP echo requests.
+This allows testing whether a remote host is reachable and whether a specific TCP port is accepting connections.
 
-       Paping works only IPv4 and TCP.
-      
+paping can be useful for:
+
+ • testing service availability
+ • troubleshooting firewall issues
+ • measuring TCP connection response times
+ • verifying remote port accessibility
+
+A successful TCP connection generally follows the TCP three-way handshake:
+
+ 1) Client sends SYN
+ 2) Server replies with SYN, ACK
+ 3) Client sends ACK
+
+paping measures the time required to establish the TCP connection and reports the result to the user.
+
 OPTIONS
-
-       -?, --help	
-               The option displays usage
- 
-       -c, --count N	
-               set number of checks to N
-
-       -p, --port N	
-               set TCP port N (required)
-     
-       -t, --timeout	
-               timeout in milliseconds (default 1000)
-
-      --nocolor	
-          Disable color output
+   -?, --help    Display help and usage information.
+   -4, --4    Use IPv4 only
+   -6, --6    Use IPv6 only
+   -c, --count N    Stop after sending N connection attempts.
+   -p, --port N    Specify the destination TCP port number.
+   -t, --timeout N    Set the connection timeout in milliseconds.
+          Default is 1000.
+   --nocolor     Disable colored output.
 
 BUGS
-           • Limitation to use only IPv4 and TCP.
 
-           • Please send bug reports, questions, requests, fixes and pull requests to
-             https://github.com/ronyjdesousa/paping/issues
+Bug reports, patches, and feature requests can be submitted at:
+
+https://github.com/ronyjdesousa/paping/issues
 
 SEE ALSO
-       ip(8), ss(8), ping(8).
+ping(8), ip(8), ss(8)
 
 AUTHOR
-       The original author of paping is Mike Lovell. Currently, this project is maintained
-       by volunteers.
+paping was originally written by Mike Lovell.
 
-       The last version of paping can be found at https://github.com/ronyjdesousa/paping/pulls
+The project is currently maintained by volunteers.
 
+Project page:
+
+https://github.com/ronyjdesousa/paping
