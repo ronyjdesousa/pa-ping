@@ -64,18 +64,18 @@ int socket_c::Connect(host_c host, int timeout, double &time)
             reinterpret_cast<sockaddr_in *>(&host.Address);
 
         address->sin_port = htons(host.Port);
+
     } else if (host.AddressFamily == AF_INET6) {
         sockaddr_in6 *address =
             reinterpret_cast<sockaddr_in6 *>(&host.Address);
 
         address->sin6_port = htons(host.Port);
+
     } else {
         net_compat_c::Close(clientSocket);
         net_compat_c::Cleanup();
         return ERROR_SOCKET_GENERALFAILURE;
     }
-
-    timeval tv;
 
     if (net_compat_c::SetNonBlocking(clientSocket) != SUCCESS) {
         net_compat_c::Close(clientSocket);
@@ -83,42 +83,106 @@ int socket_c::Connect(host_c host, int timeout, double &time)
         return ERROR_SOCKET_GENERALFAILURE;
     }
 
-    tv.tv_sec = 0;
-    tv.tv_usec = timeout * 1000;
+    timeval tv;
+    tv.tv_sec = timeout / 1000;
+    tv.tv_usec = (timeout % 1000) * 1000;
 
     timer_c timer;
-
     timer.Start();
 
-    connect(clientSocket,
-            reinterpret_cast<sockaddr *>(&host.Address),
-            host.AddressLength);
+    result = connect(clientSocket,
+                     reinterpret_cast<sockaddr *>(&host.Address),
+                     host.AddressLength);
 
-    fd_set read, write;
+    if (result == 0) {
+        time = timer.Stop();
 
-    FD_ZERO(&read);
-    FD_ZERO(&write);
+        net_compat_c::Close(clientSocket);
+        net_compat_c::Cleanup();
 
-    FD_SET(clientSocket, &read);
-    FD_SET(clientSocket, &write);
+        return SUCCESS;
+    }
 
-    result = select(clientSocket + 1, &read, &write, NULL, &tv);
+#ifdef _WIN32
+    int connect_error = WSAGetLastError();
 
-    if (result != 1) {
+    if (connect_error != WSAEWOULDBLOCK &&
+        connect_error != WSAEINPROGRESS &&
+        connect_error != WSAEINVAL) {
+
+        net_compat_c::Close(clientSocket);
+        net_compat_c::Cleanup();
+
+        return ERROR_SOCKET_GENERALFAILURE;
+    }
+#else
+    if (errno != EINPROGRESS) {
+
+        int error = errno;
+
+        net_compat_c::Close(clientSocket);
+        net_compat_c::Cleanup();
+
+        return error;
+    }
+#endif
+
+    fd_set readfds, writefds;
+
+    FD_ZERO(&readfds);
+    FD_ZERO(&writefds);
+
+    FD_SET(clientSocket, &readfds);
+    FD_SET(clientSocket, &writefds);
+
+    result = select(clientSocket + 1,
+                    &readfds,
+                    &writefds,
+                    NULL,
+                    &tv);
+
+    if (result == 0) {
         net_compat_c::Close(clientSocket);
         net_compat_c::Cleanup();
 
         return ERROR_SOCKET_TIMEOUT;
+    }
+
+    if (result < 0) {
+        int error = errno;
+
+        net_compat_c::Close(clientSocket);
+        net_compat_c::Cleanup();
+
+        return error;
+    }
+
+    int socket_error = 0;
+    socklen_t len = sizeof(socket_error);
+
+    if (getsockopt(clientSocket,
+                   SOL_SOCKET,
+                   SO_ERROR,
+                   reinterpret_cast<char *>(&socket_error),
+                   &len) < 0) {
+
+        int error = errno;
+
+        net_compat_c::Close(clientSocket);
+        net_compat_c::Cleanup();
+
+        return error;
+    }
+
+    if (socket_error != 0) {
+
+        net_compat_c::Close(clientSocket);
+        net_compat_c::Cleanup();
+
+        return socket_error;
     }
 
     time = timer.Stop();
-
-    if (!FD_ISSET(clientSocket, &read) && !FD_ISSET(clientSocket, &write)) {
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-
-        return ERROR_SOCKET_TIMEOUT;
-    }
 
     net_compat_c::Close(clientSocket);
     net_compat_c::Cleanup();
