@@ -42,150 +42,176 @@ int socket_c::GetSocketType(int type)
     }
 }
 
-int socket_c::Connect(host_c host, int timeout, double &time)
+int socket_c::Connect(host_c &host, int timeout, double &time)
 {
     int result = 0;
-    socket_fd_t clientSocket;
+    int lastError = ERROR_SOCKET_GENERALFAILURE;
+
+    addrinfo hints;
+    addrinfo *addresses = NULL;
 
     if (net_compat_c::Init() != SUCCESS)
         return ERROR_SOCKET_GENERALFAILURE;
 
-    clientSocket = socket(host.AddressFamily,
-                          socket_c::GetSocketType(host.Type),
-                          host.Type);
+    memset(&hints, 0, sizeof(hints));
 
-    if (clientSocket == -1) {
+    /*
+     * Use AF_UNSPEC so the operating system decides the preferred
+     * address order, normally following RFC 6724 and /etc/gai.conf.
+     */
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = socket_c::GetSocketType(host.Type);
+    hints.ai_protocol = host.Type;
+
+    char service[16];
+    snprintf(service, sizeof(service), "%d", host.Port);
+
+    result = getaddrinfo(host.Hostname, service, &hints, &addresses);
+
+    if (result != 0 || addresses == NULL) {
         net_compat_c::Cleanup();
-        return ERROR_SOCKET_GENERALFAILURE;
+        return ERROR_SOCKET_CANNOTRESOLVE;
     }
 
-    if (host.AddressFamily == AF_INET) {
-        sockaddr_in *address =
-            reinterpret_cast<sockaddr_in *>(&host.Address);
+    for (addrinfo *current = addresses;
+         current != NULL;
+         current = current->ai_next) {
 
-        address->sin_port = htons(host.Port);
+        socket_fd_t clientSocket;
 
-    } else if (host.AddressFamily == AF_INET6) {
-        sockaddr_in6 *address =
-            reinterpret_cast<sockaddr_in6 *>(&host.Address);
+        clientSocket = socket(current->ai_family,
+                              current->ai_socktype,
+                              current->ai_protocol);
 
-        address->sin6_port = htons(host.Port);
+        if (clientSocket == -1) {
+            lastError = ERROR_SOCKET_GENERALFAILURE;
+            continue;
+        }
 
-    } else {
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-        return ERROR_SOCKET_GENERALFAILURE;
-    }
+        if (net_compat_c::SetNonBlocking(clientSocket) != SUCCESS) {
+            net_compat_c::Close(clientSocket);
+            lastError = ERROR_SOCKET_GENERALFAILURE;
+            continue;
+        }
 
-    if (net_compat_c::SetNonBlocking(clientSocket) != SUCCESS) {
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-        return ERROR_SOCKET_GENERALFAILURE;
-    }
+        timeval tv;
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
 
-    timeval tv;
-    tv.tv_sec = timeout / 1000;
-    tv.tv_usec = (timeout % 1000) * 1000;
+        timer_c timer;
+        timer.Start();
 
-    timer_c timer;
-    timer.Start();
+        result = connect(clientSocket,
+                         current->ai_addr,
+                         current->ai_addrlen);
 
-    result = connect(clientSocket,
-                     reinterpret_cast<sockaddr *>(&host.Address),
-                     host.AddressLength);
+        if (result == 0) {
+            time = timer.Stop();
 
-    if (result == 0) {
+            memset(&host.Address, 0, sizeof(host.Address));
+            memcpy(&host.Address, current->ai_addr, current->ai_addrlen);
+
+            host.AddressLength = current->ai_addrlen;
+            host.AddressFamily = current->ai_family;
+
+            net_compat_c::Close(clientSocket);
+            freeaddrinfo(addresses);
+            net_compat_c::Cleanup();
+
+            return SUCCESS;
+        }
+
+#ifdef _WIN32
+        int connect_error = WSAGetLastError();
+
+        if (connect_error != WSAEWOULDBLOCK &&
+            connect_error != WSAEINPROGRESS &&
+            connect_error != WSAEINVAL) {
+
+            net_compat_c::Close(clientSocket);
+            lastError = ERROR_SOCKET_GENERALFAILURE;
+            continue;
+        }
+#else
+        if (errno != EINPROGRESS) {
+            lastError = errno;
+
+            net_compat_c::Close(clientSocket);
+            continue;
+        }
+#endif
+
+        fd_set readfds, writefds;
+
+        FD_ZERO(&readfds);
+        FD_ZERO(&writefds);
+
+        FD_SET(clientSocket, &readfds);
+        FD_SET(clientSocket, &writefds);
+
+        result = select(clientSocket + 1,
+                        &readfds,
+                        &writefds,
+                        NULL,
+                        &tv);
+
+        if (result == 0) {
+            net_compat_c::Close(clientSocket);
+            lastError = ERROR_SOCKET_TIMEOUT;
+            continue;
+        }
+
+        if (result < 0) {
+#ifdef _WIN32
+            lastError = WSAGetLastError();
+#else
+            lastError = errno;
+#endif
+            net_compat_c::Close(clientSocket);
+            continue;
+        }
+
+        int socket_error = 0;
+        socklen_t len = sizeof(socket_error);
+
+        if (getsockopt(clientSocket,
+                       SOL_SOCKET,
+                       SO_ERROR,
+                       reinterpret_cast<char *>(&socket_error),
+                       &len) < 0) {
+#ifdef _WIN32
+            lastError = WSAGetLastError();
+#else
+            lastError = errno;
+#endif
+            net_compat_c::Close(clientSocket);
+            continue;
+        }
+
+        if (socket_error != 0) {
+            lastError = socket_error;
+
+            net_compat_c::Close(clientSocket);
+            continue;
+        }
+
         time = timer.Stop();
 
+        memset(&host.Address, 0, sizeof(host.Address));
+        memcpy(&host.Address, current->ai_addr, current->ai_addrlen);
+
+        host.AddressLength = current->ai_addrlen;
+        host.AddressFamily = current->ai_family;
+
         net_compat_c::Close(clientSocket);
+        freeaddrinfo(addresses);
         net_compat_c::Cleanup();
 
         return SUCCESS;
     }
 
-#ifdef _WIN32
-    int connect_error = WSAGetLastError();
-
-    if (connect_error != WSAEWOULDBLOCK &&
-        connect_error != WSAEINPROGRESS &&
-        connect_error != WSAEINVAL) {
-
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-
-        return ERROR_SOCKET_GENERALFAILURE;
-    }
-#else
-    if (errno != EINPROGRESS) {
-
-        int error = errno;
-
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-
-        return error;
-    }
-#endif
-
-    fd_set readfds, writefds;
-
-    FD_ZERO(&readfds);
-    FD_ZERO(&writefds);
-
-    FD_SET(clientSocket, &readfds);
-    FD_SET(clientSocket, &writefds);
-
-    result = select(clientSocket + 1,
-                    &readfds,
-                    &writefds,
-                    NULL,
-                    &tv);
-
-    if (result == 0) {
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-
-        return ERROR_SOCKET_TIMEOUT;
-    }
-
-    if (result < 0) {
-        int error = errno;
-
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-
-        return error;
-    }
-
-    int socket_error = 0;
-    socklen_t len = sizeof(socket_error);
-
-    if (getsockopt(clientSocket,
-                   SOL_SOCKET,
-                   SO_ERROR,
-                   reinterpret_cast<char *>(&socket_error),
-                   &len) < 0) {
-
-        int error = errno;
-
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-
-        return error;
-    }
-
-    if (socket_error != 0) {
-
-        net_compat_c::Close(clientSocket);
-        net_compat_c::Cleanup();
-
-        return socket_error;
-    }
-
-    time = timer.Stop();
-
-    net_compat_c::Close(clientSocket);
+    freeaddrinfo(addresses);
     net_compat_c::Cleanup();
 
-    return SUCCESS;
+    return lastError;
 }
