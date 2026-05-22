@@ -1,7 +1,9 @@
 #include "resolver.h"
 #include "net_compat.h"
 
-int resolver_c::Resolve(pcc_t hostname, host_c &host)
+int resolver_c::Resolve(pcc_t hostname,
+                        int addressFamily,
+                        host_c &host)
 {
     addrinfo hints;
     addrinfo *result = NULL;
@@ -11,7 +13,7 @@ int resolver_c::Resolve(pcc_t hostname, host_c &host)
 
     memset(&hints, 0, sizeof(hints));
 
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = addressFamily;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 

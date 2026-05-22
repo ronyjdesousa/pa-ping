@@ -4,5 +4,7 @@
 
 class resolver_c {
 public:
-    static int Resolve(pcc_t hostname, host_c &host);
+    static int Resolve(pcc_t hostname,
+                       int addressFamily,
+                       host_c &host);
 };

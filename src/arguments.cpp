@@ -27,6 +27,7 @@ int arguments_c::Process(int argc, pc_t argv[], arguments_c &arguments)
         arguments.Count = 0;
         arguments.Timeout = 1000;
         arguments.Type = IPPROTO_TCP;
+        arguments.AddressFamily = AF_UNSPEC;
         arguments.Continous = true;
         arguments.UseColor = true;
 
@@ -71,6 +72,33 @@ int arguments_c::Process(int argc, pc_t argv[], arguments_c &arguments)
                 if (value == 1)
                 {
                         arguments.UseColor = false;
+                }
+
+                if (anyMatch)
+                {
+                        continue;
+                }
+
+                if (!strcmp(argv[i], "-4") || !strcmp(argv[i], "--4"))
+                {
+                        if (arguments.AddressFamily == AF_INET6)
+                        {
+                                return ERROR_INVALIDARGUMENTS;
+                        }
+
+                        arguments.AddressFamily = AF_INET;
+                        continue;
+                }
+
+                if (!strcmp(argv[i], "-6") || !strcmp(argv[i], "--6"))
+                {
+                        if (arguments.AddressFamily == AF_INET)
+                        {
+                                return ERROR_INVALIDARGUMENTS;
+                        }
+
+                        arguments.AddressFamily = AF_INET6;
+                        continue;
                 }
 
                 if (!anyMatch)

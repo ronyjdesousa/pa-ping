@@ -13,7 +13,7 @@ void signalHandler(int id);
 
 
 bool    useColor        = false;
-int             exitCode        = 0;
+int     exitCode        = 0;
 stats_c stats;
 
 
@@ -21,7 +21,7 @@ stats_c stats;
 int main(int argc, pc_t argv[])
 {
         host_c          host;
-        int                     result;
+        int             result;
         arguments_c     arguments;
 
 
@@ -30,7 +30,7 @@ int main(int argc, pc_t argv[])
         stats.Failures  = 0;
         stats.Minimum   = 0.0;
         stats.Maximum   = 0.0;
-        stats.Total             = 0.0;
+        stats.Total     = 0.0;
 
         arguments_c::PrintBanner();
 
@@ -44,7 +44,10 @@ int main(int argc, pc_t argv[])
 
         useColor = arguments.UseColor;
 
-        result = socket_c::Resolve(arguments.Destination, host);
+        result = socket_c::Resolve(
+                arguments.Destination,
+                arguments.AddressFamily,
+                host);
 
         if (result == SUCCESS)
         {
@@ -73,9 +76,9 @@ int main(int argc, pc_t argv[])
         signal(SIGINT, &signalHandler);
 
 
-        unsigned int    i               = 0;
+        unsigned int    i       = 0;
 
-        double                  time    = 0.0;
+        double          time    = 0.0;
 
         while (arguments.Continous || i < (unsigned int)arguments.Count)
         {
@@ -140,7 +143,7 @@ void printError(int error)
 
 int printConnectInfo(host_c host)
 {
-        int             length  = 0;
+        int     length  = 0;
 
         length = host.GetConnectInfoString(NULL);
 
@@ -169,7 +172,7 @@ int printConnectInfo(host_c host)
 
 int printSuccessfulConnection(host_c host, double time)
 {
-        int             length  = 0;
+        int     length  = 0;
 
         length = host.GetSuccessfulConnectionString(NULL, time);
 

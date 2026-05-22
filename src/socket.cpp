@@ -4,9 +4,11 @@
 
 using namespace std;
 
-int socket_c::Resolve(pcc_t hostname, host_c &host)
+int socket_c::Resolve(pcc_t hostname,
+                      int addressFamily,
+                      host_c &host)
 {
-    return resolver_c::Resolve(hostname, host);
+    return resolver_c::Resolve(hostname, addressFamily, host);
 }
 
 int socket_c::SetPortAndType(int port, int type, host_c &host)
@@ -55,11 +57,7 @@ int socket_c::Connect(host_c &host, int timeout, double &time)
 
     memset(&hints, 0, sizeof(hints));
 
-    /*
-     * Use AF_UNSPEC so the operating system decides the preferred
-     * address order, normally following RFC 6724 and /etc/gai.conf.
-     */
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = host.AddressFamily;
     hints.ai_socktype = socket_c::GetSocketType(host.Type);
     hints.ai_protocol = host.Type;
 
