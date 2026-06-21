@@ -9,7 +9,7 @@ It works similarly to `ping`, but uses TCP connections instead of ICMP echo
 requests. This makes it useful for checking whether a remote service is
 reachable and accepting connections on a specific port.
 
-Paping can be used to:
+Pa-ping can be used to:
 
 - verify whether a remote host is reachable
 - test if a TCP port is accepting connections
