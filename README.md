@@ -1,8 +1,8 @@
-# PAPING
+# PA-PING
 
 ## TCP Ping Utility
 
-Paping is an open-source utility for testing TCP/IP network connectivity
+Pa-ping is an open-source utility for testing TCP/IP network connectivity
 between hosts.
 
 It works similarly to `ping`, but uses TCP connections instead of ICMP echo
@@ -19,13 +19,13 @@ Paping can be used to:
 
 ## Platform Support
 
-Paping currently supports Linux systems.
+Pa-ping currently supports Linux systems.
 
 macOS and Windows support are planned but not yet fully implemented.
 
 ## Building from Source
 
-Paping uses the GNU autotools build system.
+Pa-ping uses the GNU autotools build system.
 
 ### Requirements
 
